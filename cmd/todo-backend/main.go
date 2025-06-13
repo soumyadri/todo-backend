@@ -34,6 +34,8 @@ func main() {
 	// Controller
 	http.HandleFunc("POST /api/create/todo", todo.NewTodos(storage))
 	http.HandleFunc("GET /api/todo", todo.GetTodos(storage))
+	http.HandleFunc("GET /api/todo/{id}", todo.GetTodoById(storage))
+	http.HandleFunc("PUT /api/todo/{id}", todo.UpdateTodo(storage))
 
 	slog.Info("Server started", "address", cfg.HTTPServer.Address)
 

@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/soumyadri/todo-backend/internal/config"
 	"github.com/soumyadri/todo-backend/internal/types"
@@ -73,4 +74,73 @@ func (db *SQLite) GetAllTodos() ([]types.Todos, error) {
 	}
 
 	return todos, nil
+}
+
+func (db *SQLite) GetTodoByStatus(status string) ([]types.Todos, error) {
+	rows, err := db.Db.Query("SELECT id, title, description, status, duedate, created_at, updated_at FROM todos WHERE status = ?", status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var todos []types.Todos
+	for rows.Next() {
+		var todo types.Todos
+		if err := rows.Scan(&todo.ID, &todo.Title, &todo.Description, &todo.Status, &todo.Duedate, &todo.CreatedAt, &todo.UpdatedAt); err != nil {
+			return nil, err
+		}
+		todos = append(todos, todo)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return todos, nil
+}
+
+func (db *SQLite) GetTodoByDoneBy() ([]types.Todos, error) {
+	rows, err := db.Db.Query("SELECT * FROM todos WHERE dueDate > ? ORDER BY dueDate ASC;", time.Now())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var todos []types.Todos
+	for rows.Next() {
+		var todo types.Todos
+		if err := rows.Scan(&todo.ID, &todo.Title, &todo.Description, &todo.Status, &todo.Duedate, &todo.CreatedAt, &todo.UpdatedAt); err != nil {
+			return nil, err
+		}
+		todos = append(todos, todo)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return todos, nil
+}
+
+func (db *SQLite) GetTodoById(id int64) (types.Todos, error) {
+	row := db.Db.QueryRow("SELECT id, title, description, status, duedate, created_at, updated_at FROM todos WHERE id = ?", id)
+
+	var todo types.Todos
+	if err := row.Scan(&todo.ID, &todo.Title, &todo.Description, &todo.Status, &todo.Duedate, &todo.CreatedAt, &todo.UpdatedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return todo, nil // No todo found with the given ID
+		}
+		return todo, err // Other error
+	}
+
+	return todo, nil
+}
+
+func (db *SQLite) UpdateTodo(id int64, todo types.Todos) error {
+	_, err := db.Db.Exec("UPDATE todos SET title = ?, description = ?, status = ?, duedate = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", todo.Title, todo.Description, todo.Status, todo.Duedate, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

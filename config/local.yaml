@@ -1,0 +1,6 @@
+env: "development"
+# Database configuration
+storage_path: "storage/storage.db"
+# Server configuration
+http_server:
+  address: "localhost:8082"
